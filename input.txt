@@ -1,0 +1,7 @@
+VAR x, y;
+BEGIN
+  x := 10;
+  y := x + 5;
+  IF y > 10 THEN
+    y := y - 1;
+END.
