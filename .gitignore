@@ -1,3 +1,13 @@
-scanner.exe
-pl0lexer.exe
-pl0compiler.exe
+
+*.exe
+
+*.o
+*.obj
+
+*~
+*.swp
+
+*.log
+core
+
+.vscode/
