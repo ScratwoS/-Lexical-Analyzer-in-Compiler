@@ -1,7 +1,7 @@
 PROGRAM test;
 VAR x, y;
 BEGIN
-   IF x > 0 AND y < 1 THEN
+   IF x > 0 THEN
       x := 1;
-      y := 2x -1;
+      y := 2 * x -1;
 END.
