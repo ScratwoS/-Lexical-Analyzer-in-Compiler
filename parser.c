@@ -135,6 +135,11 @@ void statement()
         condition();
         match(THEN);
         statement();
+        while (Token == SEMICOLON) // Cho phép nhiều câu sau THEN
+        {
+            getToken();
+            statement();
+        }
         if (Token == ELSE)
         {
             getToken();
@@ -188,10 +193,12 @@ void block()
     if (Token == VAR)
     {
         getToken();
-        do
+        match(IDENT);
+        while (Token == COMMA)
         {
+            getToken();
             match(IDENT);
-        } while (Token == COMMA);
+        }
         match(SEMICOLON);
     }
 
