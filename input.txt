@@ -1,7 +1,6 @@
-VAR x, y;
+PROGRAM test;
+VAR x;
 BEGIN
-  x := 10;
-  y := x + 5;
-  IF y > 10 THEN
-    y := y - 1;
+   IF x > 0 THEN
+      x := 1;
 END.
