@@ -1,7 +1,6 @@
 PROGRAM test;
 VAR x, y;
-BEGIN
+BEGIN 
    IF x > 0 THEN
-      x := 1;
-      y := 2 * x -1;
+      x := x + y;
 END.

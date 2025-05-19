@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "parser.h"
 #include "scanner.h"
+#include "semantic.h"
 
 void error(const char *message)
 {
@@ -17,9 +18,7 @@ void error(const char *message)
 void match(TokenType expected)
 {
     if (Token == expected)
-    {
         getToken();
-    }
     else
     {
         char error_msg[150];
@@ -33,6 +32,7 @@ void factor()
 {
     if (Token == IDENT)
     {
+        checkVariable(Id);
         getToken();
     }
     else if (Token == NUMBER)
@@ -56,7 +56,12 @@ void term()
     factor();
     while (Token == TIMES || Token == SLASH)
     {
+        TokenType op = Token;
         getToken();
+        if (op == SLASH && Token == NUMBER && Num == 0)
+        {
+            semanticError("Chia cho 0", "");
+        }
         factor();
     }
 }
@@ -64,9 +69,7 @@ void term()
 void expression()
 {
     if (Token == PLUS || Token == MINUS)
-    {
         getToken();
-    }
     term();
     while (Token == PLUS || Token == MINUS)
     {
@@ -95,11 +98,11 @@ void statement()
     switch (Token)
     {
     case IDENT:
+        checkVariable(Id);
         getToken();
         match(ASSIGN);
         expression();
         break;
-
     case CALL:
         getToken();
         match(IDENT);
@@ -118,7 +121,6 @@ void statement()
             match(RPARENT);
         }
         break;
-
     case BEGIN:
         getToken();
         statement();
@@ -129,13 +131,12 @@ void statement()
         }
         match(END);
         break;
-
     case IF:
         getToken();
         condition();
         match(THEN);
         statement();
-        while (Token == SEMICOLON) // Cho phép nhiều câu sau THEN
+        while (Token == SEMICOLON)
         {
             getToken();
             statement();
@@ -146,14 +147,12 @@ void statement()
             statement();
         }
         break;
-
     case WHILE:
         getToken();
         condition();
         match(DO);
         statement();
         break;
-
     case FOR:
         getToken();
         match(IDENT);
@@ -164,13 +163,11 @@ void statement()
         match(DO);
         statement();
         break;
-
     case SEMICOLON:
     case END:
     case ELSE:
     case PERIOD:
         break;
-
     default:
         error("Bat dau cau lenh khong hop le");
     }
@@ -194,10 +191,12 @@ void block()
     {
         getToken();
         match(IDENT);
+        declareVariable(Id, TYPE_INT);
         while (Token == COMMA)
         {
             getToken();
             match(IDENT);
+            declareVariable(Id, TYPE_INT);
         }
         match(SEMICOLON);
     }
@@ -216,9 +215,15 @@ void block()
 
 void Program()
 {
+    getToken();
     match(PROGRAM);
     match(IDENT);
     match(SEMICOLON);
     block();
     match(PERIOD);
+
+    if (Token != NONE)
+    {
+        error("Ky tu ngoai le sau dau '.'");
+    }
 }

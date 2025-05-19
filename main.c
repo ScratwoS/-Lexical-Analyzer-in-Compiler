@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "parser.h"
 #include "scanner.h"
+#include "semantic.h"
 
 int main(int argc, char *argv[])
 {
@@ -13,18 +14,11 @@ int main(int argc, char *argv[])
     const char *filename = argv[1];
 
     initLexer(filename);
-    getToken();
-
-    if (Token == NONE)
-    {
-        fprintf(stderr, "Loi: File '%s' rong hoac token dau tien khong hop le.\n", filename);
-        closeLexer();
-        return 1;
-    }
-
+    initSymbolTable();
     Program();
-
+    cleanupSymbolTable();
     closeLexer();
-    fprintf(stderr, "Phan tich cu phap thanh cong!\n");
+
+    fprintf(stderr, "Phan tich cu phap va ngu nghia thanh cong!\n");
     return 0;
 }
