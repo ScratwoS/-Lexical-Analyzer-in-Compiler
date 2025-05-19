@@ -1,3 +1,7 @@
-Để chạy trình Compiler, sử dụng những lệnh sau: 
-- gcc main.c parser.c scanner.c -o pl0compiler -std=c99
-- ./pl0compiler input.txt
+
+## Cách biên dịch bộ phân tích từ vựng
+
+Chạy lệnh sau trong terminal để tạo file thực thi:
+- gcc -o scanner main.c scanner.c
+- scanner input.txt  
+
