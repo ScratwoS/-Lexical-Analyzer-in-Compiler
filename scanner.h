@@ -7,7 +7,8 @@
 
 #define MAX_IDENT_LEN 32
 
-typedef enum {
+typedef enum
+{
     NONE = 0,
     IDENT,
     NUMBER,
@@ -51,12 +52,11 @@ extern TokenType Token;
 extern int Num;
 extern char Id[MAX_IDENT_LEN + 1];
 extern char Ch;
-extern FILE* input;
+extern FILE *input;
 
-void initLexer(const char* input);
+void initLexer(const char *input);
 void closeLexer();
 
 TokenType getToken();
 void printToken();
-const char* getTokenName(TokenType token);
-
+const char *getTokenName(TokenType token);

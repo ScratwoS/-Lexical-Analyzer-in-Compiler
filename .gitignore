@@ -1,15 +1,13 @@
-# Compiled binary
-pl0lexer
 
-# Object files
+*.exe
+
 *.o
+*.obj
 
-# Backup files
-*.bak
+*~
 *.swp
-*.swo
 
-# Editor and OS-specific files
-*.DS_Store
-Thumbs.db
 *.log
+core
+
+.vscode/
