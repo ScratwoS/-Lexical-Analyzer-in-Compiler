@@ -5,6 +5,7 @@
 #include "scanner.h"
 #include "semantic.h"
 
+// prototypes để compiler biết trước khi sử dụng
 static int evalFactor(int *isKnown);
 static int evalTerm(int *isKnown);
 static int evalExpression(int *isKnown);
@@ -35,6 +36,7 @@ void match(TokenType expected)
     }
 }
 
+// Đánh giá giá trị factor
 static int evalFactor(int *isKnown)
 {
     int value = 0;
@@ -43,37 +45,42 @@ static int evalFactor(int *isKnown)
         checkVariable(Id);
         char varName[MAX_IDENT_LEN + 1];
         strcpy(varName, Id);
+
+        int hasIndex = 0; // Kiểm tra truy cập mảng hay biến thường
         getToken();
 
         if (Token == LBRACK)
         {
+            hasIndex = 1;
             getToken();
+
             if (Token == NUMBER)
             {
+                int idx = Num;
                 getToken();
                 match(RBRACK);
+                checkArrayIndex(varName, idx);
             }
             else if (Token == IDENT)
             {
                 checkVariable(Id);
                 getToken();
                 match(RBRACK);
+                checkArrayIndexUnknownIndex(varName);
             }
             else
             {
                 error("Chi so mang phai la so nguyen hoac bien");
             }
-            checkArrayIndexUnknownIndex(varName);
-            *isKnown = 0;
-            return 0;
         }
-        else
-        {
-            int known;
-            value = getVariableValue(varName, &known);
-            *isKnown = known;
-            return value;
-        }
+
+        // Kiểm tra kiểu truy cập đúng: biến mảng phải có chỉ số, biến thường không được có chỉ số
+        checkArrayUsage(varName, hasIndex);
+
+        int known;
+        value = getVariableValue(varName, &known);
+        *isKnown = known;
+        return value;
     }
     else if (Token == NUMBER)
     {
@@ -96,6 +103,7 @@ static int evalFactor(int *isKnown)
     }
 }
 
+// Đánh giá term
 static int evalTerm(int *isKnown)
 {
     int value = evalFactor(isKnown);
@@ -115,7 +123,7 @@ static int evalTerm(int *isKnown)
             else
                 *isKnown = 0;
         }
-        else
+        else // TIMES
         {
             if (*isKnown && rhsKnown)
                 value *= rhsVal;
@@ -126,6 +134,7 @@ static int evalTerm(int *isKnown)
     return value;
 }
 
+// Đánh giá expression
 static int evalExpression(int *isKnown)
 {
     int value = 0;
@@ -166,22 +175,21 @@ static int evalExpression(int *isKnown)
     return value;
 }
 
+// Giữ nguyên để tương thích
 void expression()
 {
-    int dummy;
-    (void)evalExpression(&dummy);
+    int d;
+    (void)evalExpression(&d);
 }
-
 void term()
 {
-    int dummy;
-    (void)evalTerm(&dummy);
+    int d;
+    (void)evalTerm(&d);
 }
-
 void factor()
 {
-    int dummy;
-    (void)evalFactor(&dummy);
+    int d;
+    (void)evalFactor(&d);
 }
 
 void condition()
@@ -205,18 +213,23 @@ void statement()
     {
     case IDENT:
     {
-        checkVariable(Id);
         char varName[MAX_IDENT_LEN + 1];
         strcpy(varName, Id);
+        int hasIndex = 0;
+
         getToken();
 
         if (Token == LBRACK)
         {
+            hasIndex = 1;
             getToken();
+
             if (Token == NUMBER)
             {
+                int idx = Num;
                 getToken();
                 match(RBRACK);
+                checkArrayIndex(varName, idx);
             }
             else if (Token == IDENT)
             {
@@ -231,16 +244,24 @@ void statement()
             }
         }
 
+        checkArrayUsage(varName, hasIndex); // Kiểm tra biến/mảng và kiểu truy cập
+
         match(ASSIGN);
-        int known, value = evalExpression(&known);
+        int known, val = evalExpression(&known);
         if (known)
-            setVariableValue(varName, value);
+            setVariableValue(varName, val);
         break;
     }
 
     case CALL:
+    {
+        getToken(); // ăn CALL
+        if (Token != IDENT)
+            error("CALL phai theo sau IDENT");
+        char procName[MAX_IDENT_LEN + 1];
+        strcpy(procName, Id);
+        checkProcedure(procName);
         getToken();
-        match(IDENT);
         if (Token == LPARENT)
         {
             getToken();
@@ -256,6 +277,7 @@ void statement()
             match(RPARENT);
         }
         break;
+    }
 
     case BEGIN:
         getToken();
@@ -323,9 +345,8 @@ void block()
             match(EQU);
             if (Token != NUMBER)
                 error("Gia tri hang so phai la so nguyen");
-            int v = Num;
+            declareConstant(constName, Num);
             getToken();
-            declareConstant(constName, v);
         } while (Token == COMMA && (getToken(), 1));
         match(SEMICOLON);
     }
@@ -344,8 +365,6 @@ void block()
                 getToken();
                 if (Token != NUMBER)
                     error("Kich thuoc mang phai la so nguyen duong");
-                if (Num <= 0)
-                    error("Kich thuoc mang phai lon hon 0");
                 arrSize = Num;
                 getToken();
                 match(RBRACK);
@@ -358,7 +377,12 @@ void block()
     while (Token == PROCEDURE)
     {
         getToken();
-        match(IDENT);
+        if (Token != IDENT)
+            error("PROCEDURE phai theo sau IDENT");
+        char procName[MAX_IDENT_LEN + 1];
+        strcpy(procName, Id);
+        declareProcedure(procName);
+        getToken();
         match(SEMICOLON);
         block();
         match(SEMICOLON);
