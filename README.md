@@ -1,7 +1,6 @@
 
-## Cách biên dịch bộ phân tích từ vựng
-
+## Cách biên dịch bộ phân tích ngữ nghĩa
 Chạy lệnh sau trong terminal để tạo file thực thi:
-- gcc -o scanner main.c scanner.c
-- scanner input.txt  
 
+gcc main.c parser.c scanner.c semantic.c -o pl0compiler -std=c99
+.\pl0compiler.exe input.txt
