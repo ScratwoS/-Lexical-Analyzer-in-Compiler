@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "parser.h"
 #include "scanner.h"
 #include "semantic.h"
 
+static int evalFactor(int *isKnown);
+static int evalTerm(int *isKnown);
+static int evalExpression(int *isKnown);
+
 void error(const char *message)
 {
-    fprintf(stderr, "Loi phan tich cu phap: %s. Token hien tai: %s", message, getTokenName(Token));
+    fprintf(stderr, "Loi phan tich cu phap o dong %d: %s. Token hien tai: %s",
+            getLineNumber(), message, getTokenName(Token));
     if (Token == IDENT)
         fprintf(stderr, " (%s)", Id);
     if (Token == NUMBER)
@@ -22,60 +28,160 @@ void match(TokenType expected)
     else
     {
         char error_msg[150];
-        snprintf(error_msg, sizeof(error_msg), "Ky vong token '%s', nhung nhan duoc '%s'",
+        snprintf(error_msg, sizeof(error_msg),
+                 "Ky vong token '%s', nhung nhan duoc '%s'",
                  getTokenName(expected), getTokenName(Token));
         error(error_msg);
     }
 }
 
-void factor()
+static int evalFactor(int *isKnown)
 {
+    int value = 0;
     if (Token == IDENT)
     {
         checkVariable(Id);
+        char varName[MAX_IDENT_LEN + 1];
+        strcpy(varName, Id);
         getToken();
+
+        if (Token == LBRACK)
+        {
+            getToken();
+            if (Token == NUMBER)
+            {
+                getToken();
+                match(RBRACK);
+            }
+            else if (Token == IDENT)
+            {
+                checkVariable(Id);
+                getToken();
+                match(RBRACK);
+            }
+            else
+            {
+                error("Chi so mang phai la so nguyen hoac bien");
+            }
+            checkArrayIndexUnknownIndex(varName);
+            *isKnown = 0;
+            return 0;
+        }
+        else
+        {
+            int known;
+            value = getVariableValue(varName, &known);
+            *isKnown = known;
+            return value;
+        }
     }
     else if (Token == NUMBER)
     {
+        value = Num;
+        *isKnown = 1;
         getToken();
+        return value;
     }
     else if (Token == LPARENT)
     {
         getToken();
-        expression();
+        value = evalExpression(isKnown);
         match(RPARENT);
+        return value;
     }
     else
     {
         error("Loi factor: Ky vong dinh danh, so, hoac '('");
+        return 0;
     }
 }
 
-void term()
+static int evalTerm(int *isKnown)
 {
-    factor();
+    int value = evalFactor(isKnown);
     while (Token == TIMES || Token == SLASH)
     {
         TokenType op = Token;
         getToken();
-        if (op == SLASH && Token == NUMBER && Num == 0)
+        int rhsVal = evalFactor(isKnown);
+        int rhsKnown = *isKnown;
+
+        if (op == SLASH)
         {
-            semanticError("Chia cho 0", "");
+            if (rhsKnown && rhsVal == 0)
+                semanticError("Chia cho 0", "");
+            if (*isKnown && rhsKnown)
+                value /= rhsVal;
+            else
+                *isKnown = 0;
         }
-        factor();
+        else
+        {
+            if (*isKnown && rhsKnown)
+                value *= rhsVal;
+            else
+                *isKnown = 0;
+        }
     }
+    return value;
+}
+
+static int evalExpression(int *isKnown)
+{
+    int value = 0;
+    *isKnown = 1;
+    int sign = 1;
+
+    if (Token == PLUS)
+        getToken();
+    else if (Token == MINUS)
+    {
+        sign = -1;
+        getToken();
+    }
+
+    value = evalTerm(isKnown);
+    if (*isKnown)
+        value *= sign;
+
+    while (Token == PLUS || Token == MINUS)
+    {
+        TokenType op = Token;
+        getToken();
+        int rhsVal = evalTerm(isKnown);
+        int rhsKnown = *isKnown;
+
+        if (*isKnown && rhsKnown)
+        {
+            if (op == PLUS)
+                value += rhsVal;
+            else if (op == MINUS)
+                value -= rhsVal;
+        }
+        else
+        {
+            *isKnown = 0;
+        }
+    }
+    return value;
 }
 
 void expression()
 {
-    if (Token == PLUS || Token == MINUS)
-        getToken();
-    term();
-    while (Token == PLUS || Token == MINUS)
-    {
-        getToken();
-        term();
-    }
+    int dummy;
+    (void)evalExpression(&dummy);
+}
+
+void term()
+{
+    int dummy;
+    (void)evalTerm(&dummy);
+}
+
+void factor()
+{
+    int dummy;
+    (void)evalFactor(&dummy);
 }
 
 void condition()
@@ -98,11 +204,40 @@ void statement()
     switch (Token)
     {
     case IDENT:
+    {
         checkVariable(Id);
+        char varName[MAX_IDENT_LEN + 1];
+        strcpy(varName, Id);
         getToken();
+
+        if (Token == LBRACK)
+        {
+            getToken();
+            if (Token == NUMBER)
+            {
+                getToken();
+                match(RBRACK);
+            }
+            else if (Token == IDENT)
+            {
+                checkVariable(Id);
+                getToken();
+                match(RBRACK);
+                checkArrayIndexUnknownIndex(varName);
+            }
+            else
+            {
+                error("Chi so mang phai la so nguyen hoac bien");
+            }
+        }
+
         match(ASSIGN);
-        expression();
+        int known, value = evalExpression(&known);
+        if (known)
+            setVariableValue(varName, value);
         break;
+    }
+
     case CALL:
         getToken();
         match(IDENT);
@@ -121,16 +256,20 @@ void statement()
             match(RPARENT);
         }
         break;
+
     case BEGIN:
         getToken();
         statement();
         while (Token == SEMICOLON)
         {
             getToken();
+            if (Token == END)
+                break;
             statement();
         }
         match(END);
         break;
+
     case IF:
         getToken();
         condition();
@@ -147,12 +286,14 @@ void statement()
             statement();
         }
         break;
+
     case WHILE:
         getToken();
         condition();
         match(DO);
         statement();
         break;
+
     case FOR:
         getToken();
         match(IDENT);
@@ -163,11 +304,7 @@ void statement()
         match(DO);
         statement();
         break;
-    case SEMICOLON:
-    case END:
-    case ELSE:
-    case PERIOD:
-        break;
+
     default:
         error("Bat dau cau lenh khong hop le");
     }
@@ -181,23 +318,40 @@ void block()
         do
         {
             match(IDENT);
+            char constName[MAX_IDENT_LEN + 1];
+            strcpy(constName, Id);
             match(EQU);
-            match(NUMBER);
-        } while (Token == COMMA);
+            if (Token != NUMBER)
+                error("Gia tri hang so phai la so nguyen");
+            int v = Num;
+            getToken();
+            declareConstant(constName, v);
+        } while (Token == COMMA && (getToken(), 1));
         match(SEMICOLON);
     }
 
     if (Token == VAR)
     {
         getToken();
-        match(IDENT);
-        declareVariable(Id, TYPE_INT);
-        while (Token == COMMA)
+        do
         {
-            getToken();
             match(IDENT);
-            declareVariable(Id, TYPE_INT);
-        }
+            char varName[MAX_IDENT_LEN + 1];
+            strcpy(varName, Id);
+            int arrSize = 0;
+            if (Token == LBRACK)
+            {
+                getToken();
+                if (Token != NUMBER)
+                    error("Kich thuoc mang phai la so nguyen duong");
+                if (Num <= 0)
+                    error("Kich thuoc mang phai lon hon 0");
+                arrSize = Num;
+                getToken();
+                match(RBRACK);
+            }
+            declareVariableWithSize(varName, TYPE_INT, arrSize);
+        } while (Token == COMMA && (getToken(), 1));
         match(SEMICOLON);
     }
 
@@ -221,9 +375,6 @@ void Program()
     match(SEMICOLON);
     block();
     match(PERIOD);
-
     if (Token != NONE)
-    {
         error("Ky tu ngoai le sau dau '.'");
-    }
 }
