@@ -64,6 +64,7 @@ static int evalFactor(int *isKnown)
             else if (Token == IDENT)
             {
                 checkVariable(Id);
+                checkIndexVariable(Id);
                 getToken();
                 match(RBRACK);
                 checkArrayIndexUnknownIndex(varName);
@@ -234,6 +235,7 @@ void statement()
             else if (Token == IDENT)
             {
                 checkVariable(Id);
+                checkIndexVariable(Id);
                 getToken();
                 match(RBRACK);
                 checkArrayIndexUnknownIndex(varName);

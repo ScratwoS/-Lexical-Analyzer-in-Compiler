@@ -127,13 +127,39 @@ void checkArrayIndex(const char *name, int index)
 
 void checkArrayIndexUnknownIndex(const char *name)
 {
+    int found = 0;
     for (int i = 0; i < symCount; i++)
     {
         if (strcmp(symTable[i].name, name) == 0)
         {
+            found = 1;
             if (symTable[i].size <= 0)
+            {
                 semanticError("Bien khong phai mang", name);
-            return;
+            }
+            break;
+        }
+    }
+    if (!found)
+        semanticError("Bien chua duoc khai bao", name);
+}
+
+// Hàm kiểm tra biến dùng làm chỉ số mảng
+void checkIndexVariable(const char *name)
+{
+    for (int i = 0; i < symCount; i++)
+    {
+        if (strcmp(symTable[i].name, name) == 0)
+        {
+            if (symTable[i].size > 0) // Nếu là mảng
+            {
+                semanticError("Bien mang khong duoc dung lam chi so mang", name);
+            }
+            if (symTable[i].type == TYPE_PROC) // Nếu là thủ tục
+            {
+                semanticError("Thu tuc khong duoc dung lam chi so mang", name);
+            }
+            return; // Nếu là biến int hợp lệ thì ok
         }
     }
     semanticError("Bien chua duoc khai bao", name);

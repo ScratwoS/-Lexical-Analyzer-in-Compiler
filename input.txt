@@ -10,7 +10,7 @@ begin
     for i := 0 to max - 1 do
     begin
         if i < 5 then
-            sum := sum + a[1]
+            sum := sum + a[a]
         else
             sum := sum + step;
     end;
