@@ -60,3 +60,4 @@ void closeLexer();
 TokenType getToken();
 void printToken();
 const char *getTokenName(TokenType token);
+int getLineNumber(void);

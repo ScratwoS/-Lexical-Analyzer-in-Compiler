@@ -10,10 +10,21 @@ char Id[MAX_IDENT_LEN + 1];
 char Ch;
 FILE *input;
 
+static int lineNumber = 1;
+
 char getCh()
 {
     Ch = fgetc(input);
+    if (Ch == '\n')
+    {
+        lineNumber++;
+    }
     return Ch;
+}
+
+int getLineNumber()
+{
+    return lineNumber;
 }
 
 const char *getTokenName(TokenType token)
@@ -162,7 +173,7 @@ TokenType getToken()
             }
             else
             {
-                printf("Error: Expected '=' after ':'\n");
+                printf("Error at line %d: Expected '=' after ':'\n", getLineNumber());
                 break;
             }
         case '%':
@@ -171,7 +182,7 @@ TokenType getToken()
         case EOF:
             return (Token = NONE);
         default:
-            printf("Unknown character: %c (ASCII: %d)\n", Ch, Ch);
+            printf("Unknown character at line %d: %c (ASCII: %d)\n", getLineNumber(), Ch, Ch);
             getCh();
             return getToken();
         }
@@ -203,6 +214,7 @@ void initLexer(const char *File)
         exit(1);
     }
     Ch = ' ';
+    lineNumber = 1; // reset line count khi mở file mới
 }
 
 void closeLexer()

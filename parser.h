@@ -10,7 +10,6 @@ void condition();
 void expression();
 void term();
 void factor();
-
 void error(const char *message);
 
 #endif

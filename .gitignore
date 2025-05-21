@@ -1,13 +1,27 @@
 
 *.exe
+pl0compiler
+pl0compiler.exe
+pl0lexer
+pl0lexer.exe
+scanner
+scanner.exe
+
 
 *.o
 *.obj
 
+
+.vscode/
+.idea/
+
+
 *~
 *.swp
+*.bak
 
 *.log
 core
 
-.vscode/
+
+.DS_Store
