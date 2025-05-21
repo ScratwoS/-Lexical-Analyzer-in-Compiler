@@ -34,4 +34,5 @@ void checkArrayIndexUnknownIndex(const char *name);
 void checkDivideByZero(int divisor);
 void setVariableValue(const char *name, int value);
 void checkArrayUsage(const char *name, int hasIndex);
+void checkIndexVariable(const char *name);
 int getVariableValue(const char *name, int *isKnown);
